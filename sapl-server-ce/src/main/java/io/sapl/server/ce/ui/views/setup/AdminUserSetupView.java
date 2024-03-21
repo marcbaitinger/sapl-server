@@ -19,7 +19,12 @@
 package io.sapl.server.ce.ui.views.setup;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import io.sapl.server.ce.model.setup.SupportedDatasourceTypes;
+import io.sapl.server.ce.model.setup.SupportedKeystoreTypes;
+import io.sapl.server.ce.model.setup.UserManagmentOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 
@@ -64,13 +69,21 @@ public class AdminUserSetupView extends VerticalLayout {
     private transient ApplicationConfigService applicationConfigService;
     private transient HttpServletRequest       httpServletRequest;
 
-    private final TextField     username             = new TextField("Username");
-    private final PasswordField password             = new PasswordField("Password");
-    private final PasswordField passwordRepeat       = new PasswordField("Repeat Password");
-    private final Button        pwdSaveConfig        = new Button("Save Admin-User Settings");
-    private final Icon          pwdEqualCheckIcon    = VaadinIcon.CHECK.create();
-    private final Span          passwordStrengthText = new Span();
-    private final Span          passwordEqualText    = new Span();
+    private final TextField                username             = new TextField("Username");
+    private final PasswordField            password             = new PasswordField("Password");
+    private final PasswordField            passwordRepeat       = new PasswordField("Repeat Password");
+    private final Button                   pwdSaveConfig        = new Button("Save Admin-User Settings");
+    private final RadioButtonGroup<String> userMgm              = new RadioButtonGroup<>("User Management");
+    private final TextField                clientId             = new TextField("Client ID");
+    private final TextField                clientSecret         = new TextField("Client Secret");
+    private final TextField                issuerUri            = new TextField("Issuer Uri");
+    private final TextField                jwkSetUri            = new TextField("JWT Set Uri");
+    private final TextField                authorizationUri     = new TextField("Authorization Uri");
+    private final TextField                tokenUri             = new TextField("Token Uri");
+    private final TextField                userInfoUri          = new TextField("User Info Uri");
+    private final Icon                     pwdEqualCheckIcon    = VaadinIcon.CHECK.create();
+    private final Span                     passwordStrengthText = new Span();
+    private final Span                     passwordEqualText    = new Span();
 
     public AdminUserSetupView(@Autowired ApplicationConfigService applicationConfigService,
             @Autowired HttpServletRequest httpServletRequest) {
@@ -88,6 +101,14 @@ public class AdminUserSetupView extends VerticalLayout {
     }
 
     private Component getLayout() {
+        userMgm.setItems(Stream.of(UserManagmentOptions.values()).map(UserManagmentOptions::getDisplayName)
+                .toArray(String[]::new));
+        userMgm.setValue(UserManagmentOptions.LOCAL.getDisplayName());
+        userMgm.addValueChangeListener(
+                e -> userManagementSelection(UserManagmentOptions.getByDisplayName(e.getValue())));
+        userManagementSelection(UserManagmentOptions.LOCAL); // <- value needs to be read from
+                                                             // applicationConfigService.getAdminUserConfig().xx
+
         pwdSaveConfig.setEnabled(applicationConfigService.getAdminUserConfig().isValidConfig());
         pwdSaveConfig.addClickListener(e -> {
             try {
@@ -108,14 +129,50 @@ public class AdminUserSetupView extends VerticalLayout {
         username.setRequiredIndicatorVisible(true);
         username.setRequired(true);
 
-        FormLayout adminUserLayout = new FormLayout(username, pwdLayout(), pwdRepeatLayout(), pwdSaveConfig);
+        FormLayout adminUserLayout = new FormLayout(userMgm, clientId, clientSecret, issuerUri, jwkSetUri,
+                authorizationUri, tokenUri, userInfoUri, username, pwdLayout(), pwdRepeatLayout(), pwdSaveConfig);
         adminUserLayout.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1, FormLayout.ResponsiveStep.LabelsPosition.TOP),
                 new FormLayout.ResponsiveStep("490px", 2, FormLayout.ResponsiveStep.LabelsPosition.TOP));
+        adminUserLayout.setColspan(clientId, 2);
         adminUserLayout.setColspan(username, 2);
         adminUserLayout.setColspan(pwdSaveConfig, 2);
 
         return adminUserLayout;
+    }
+
+    private void userManagementSelection(UserManagmentOptions option) {
+        if (option == null)
+            option = UserManagmentOptions.LOCAL;
+
+        switch (option) {
+        case KEYCLOAK:
+            username.setVisible(false);
+            password.setVisible(false);
+            passwordRepeat.setVisible(false);
+
+            clientId.setVisible(true);
+            clientSecret.setVisible(true);
+            issuerUri.setVisible(true);
+            jwkSetUri.setVisible(true);
+            authorizationUri.setVisible(true);
+            tokenUri.setVisible(true);
+            userInfoUri.setVisible(true);
+            break;
+        case LOCAL:
+        default:
+            username.setVisible(true);
+            password.setVisible(true);
+            passwordRepeat.setVisible(true);
+
+            clientId.setVisible(false);
+            clientSecret.setVisible(false);
+            issuerUri.setVisible(false);
+            jwkSetUri.setVisible(false);
+            authorizationUri.setVisible(false);
+            tokenUri.setVisible(false);
+            userInfoUri.setVisible(false);
+        }
     }
 
     private PasswordField pwdLayout() {
