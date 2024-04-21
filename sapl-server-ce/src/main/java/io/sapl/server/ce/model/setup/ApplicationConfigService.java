@@ -174,6 +174,7 @@ public class ApplicationConfigService {
     public void persistAdminUserConfig() throws IOException {
         this.setAt(AdminUserConfig.USERNAME_PATH, this.adminUserConfig.getUsername());
         this.setAt(AdminUserConfig.ENCODEDPASSWORD_PATH, this.adminUserConfig.getEncodedPassword());
+        this.setAt(Oauth2KeyCloakConfig.OAUTH2_LOGIN_ALLOWED_PATH, this.oauth2KeyCloakConfig.isOauthLoginAllowed());
         this.persistYmlFiles();
         this.adminUserConfig.setSaved(true);
 
@@ -389,6 +390,8 @@ public class ApplicationConfigService {
     }
 
     private void initOauth2KeyCloakConfig() {
+        this.oauth2KeyCloakConfig
+                .setOauthLoginAllowed(this.getAtAsBoolean(Oauth2KeyCloakConfig.OAUTH2_LOGIN_ALLOWED_PATH, false));
         this.oauth2KeyCloakConfig.setClientId(this.getAt(Oauth2KeyCloakConfig.CLIENT_ID_PATH, "").toString());
         this.oauth2KeyCloakConfig.setClientSecret(this.getAt(Oauth2KeyCloakConfig.CLIENT_SECRET_PATH, "").toString());
         this.oauth2KeyCloakConfig.setIssuerUri(this.getAt(Oauth2KeyCloakConfig.ISSUER_URI_PATH, "").toString());
@@ -400,6 +403,7 @@ public class ApplicationConfigService {
     }
 
     public void persistOauth2KeyCloakConfig() throws IOException {
+        this.setAt(Oauth2KeyCloakConfig.OAUTH2_LOGIN_ALLOWED_PATH, this.oauth2KeyCloakConfig.isOauthLoginAllowed());
         this.setAt(Oauth2KeyCloakConfig.CLIENT_ID_PATH, this.oauth2KeyCloakConfig.getClientId());
         this.setAt(Oauth2KeyCloakConfig.CLIENT_SECRET_PATH, this.oauth2KeyCloakConfig.getClientSecret());
         this.setAt(Oauth2KeyCloakConfig.ISSUER_URI_PATH, this.oauth2KeyCloakConfig.getIssuerUri());
@@ -407,6 +411,13 @@ public class ApplicationConfigService {
         this.setAt(Oauth2KeyCloakConfig.AUTHORIZATION_URI_PATH, this.oauth2KeyCloakConfig.getAuthorizationUri());
         this.setAt(Oauth2KeyCloakConfig.TOKEN_URI_PATH, this.oauth2KeyCloakConfig.getTokenUri());
         this.setAt(Oauth2KeyCloakConfig.USER_INFO_URI_PATH, this.oauth2KeyCloakConfig.getUserInfoUri());
+
+        this.setAt(Oauth2KeyCloakConfig.CLIENT_AUTH_METHOD_PATH, this.oauth2KeyCloakConfig.getClientAuthMethod());
+        this.setAt(Oauth2KeyCloakConfig.AUTHZ_GRANT_TYPE_PATH, this.oauth2KeyCloakConfig.getAuthzGrantType());
+        this.setAt(Oauth2KeyCloakConfig.REDIRECT_URI_PATH, this.oauth2KeyCloakConfig.getRedirectUri());
+        this.setAt(Oauth2KeyCloakConfig.SCOPE_PATH, this.oauth2KeyCloakConfig.getScope());
+        this.setAt(Oauth2KeyCloakConfig.PROVIDER_PATH, this.oauth2KeyCloakConfig.getProvider());
+        this.setAt(Oauth2KeyCloakConfig.USERNAME_ATTR_PATH, this.oauth2KeyCloakConfig.getUsernameAttr());
 
         this.persistYmlFiles();
         this.oauth2KeyCloakConfig.setSaved(true);

@@ -56,20 +56,22 @@ public class ClientDetailsService implements UserDetailsService {
     private String                            adminUsername;
     @Value("${io.sapl.server.accesscontrol.encoded-admin-password:#{null}}")
     private String                            encodedAdminPassword;
+    @Value("${io.sapl.server.accesscontrol.allowOAuth2Login:#{false}}")
+    private boolean                           allowOAuth2Login;
     private final ClientCredentialsRepository clientCredentialsRepository;
     private final PasswordEncoder             passwordEncoder;
 
     @PostConstruct
     void validateSecuritySettings() {
-        if (adminUsername == null) {
+        if (adminUsername == null && !allowOAuth2Login) {
             log.error(
                     "Admin username undefined. To define the username, specify it in the property 'io.sapl.server.accesscontrol.admin-username'.");
         }
-        if (encodedAdminPassword == null) {
+        if (encodedAdminPassword == null && !allowOAuth2Login) {
             log.error(
                     "Admin password undefined. To define the password, specify it in the property 'io.sapl.server.accesscontrol.encoded-admin-password'. The password is expected in encoded form using Argon2.");
         }
-        if (adminUsername == null || encodedAdminPassword == null) {
+        if ((adminUsername == null || encodedAdminPassword == null) && !allowOAuth2Login) {
             throw new IllegalStateException("Administrator credentials missing.");
         }
     }

@@ -21,24 +21,61 @@ package io.sapl.server.ce.model.setup;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+
 @Getter
 @Setter
 public class Oauth2KeyCloakConfig {
-    static final String CLIENT_ID_PATH         = "spring.security.oauth2.client.registration.keycloak.client-id";
-    static final String CLIENT_SECRET_PATH     = "spring.security.oauth2.client.registration.keycloak.client-secret";
-    static final String ISSUER_URI_PATH        = "spring.security.oauth2.client.provider.keycloak.issuer-uri";
-    static final String JWK_SET_URI_PATH       = "spring.security.oauth2.client.provider.keycloak.jwk-set-uri";
-    static final String AUTHORIZATION_URI_PATH = "spring.security.oauth2.client.provider.keycloak.authorization-uri";
-    static final String TOKEN_URI_PATH         = "spring.security.oauth2.client.provider.keycloak.token-uri";
-    static final String USER_INFO_URI_PATH     = "spring.security.oauth2.client.provider.keycloak.user-info-uri";
+    static final String OAUTH2_LOGIN_ALLOWED_PATH = "io.sapl.server.accesscontrol.allowOAuth2Login";
+    static final String CLIENT_ID_PATH            = "spring.security.oauth2.client.registration.keycloak.client-id";
+    static final String CLIENT_SECRET_PATH        = "spring.security.oauth2.client.registration.keycloak.client-secret";
+    static final String ISSUER_URI_PATH           = "spring.security.oauth2.client.provider.keycloak.issuer-uri";
+    static final String JWK_SET_URI_PATH          = "spring.security.oauth2.client.provider.keycloak.jwk-set-uri";
+    static final String AUTHORIZATION_URI_PATH    = "spring.security.oauth2.client.provider.keycloak.authorization-uri";
+    static final String TOKEN_URI_PATH            = "spring.security.oauth2.client.provider.keycloak.token-uri";
+    static final String USER_INFO_URI_PATH        = "spring.security.oauth2.client.provider.keycloak.user-info-uri";
 
-    private String clientId;
-    private String clientSecret;
-    private String issuerUri;
-    private String jwkSetUri;
-    private String authorizationUri;
-    private String tokenUri;
-    private String userInfoUri;
+    static final String CLIENT_AUTH_METHOD_PATH = "spring.security.oauth2.client.registration.keycloak.client-authentication-method";
+    static final String AUTHZ_GRANT_TYPE_PATH   = "spring.security.oauth2.client.registration.keycloak.authorization-grant-type";
+    static final String REDIRECT_URI_PATH       = "spring.security.oauth2.client.registration.keycloak.redirect-uri";
+    static final String SCOPE_PATH              = "spring.security.oauth2.client.registration.keycloak.scope";
+    static final String PROVIDER_PATH           = "spring.security.oauth2.client.registration.keycloak.provider";
+    static final String USERNAME_ATTR_PATH      = "spring.security.oauth2.client.provider.keycloak.user-name-attribute";
+
+    private String       clientAuthMethod = "client_secret_basic";
+    private String       authzGrantType   = "authorization_code";
+    private String       redirectUri      = "{baseUrl}/login/oauth2/code/keycloak";
+    private List<String> scope            = Arrays.asList("openid", "profile", "email", "roles");
+    private String       provider         = "keycloak";
+    private String       usernameAttr     = "preferred_username";
+
+    private boolean oauthLoginAllowed;
+    private String  clientId;
+    private String  clientSecret;
+    private String  issuerUri;
+    private String  jwkSetUri;
+    private String  authorizationUri;
+    private String  tokenUri;
+    private String  userInfoUri;
 
     private boolean saved = false;
+
+    public boolean isValidConfig() {
+        return !this.clientId.isEmpty() && !this.clientSecret.isEmpty() && isValidUri(this.issuerUri)
+                && isValidUri(this.jwkSetUri) && isValidUri(this.authorizationUri) && isValidUri(this.tokenUri)
+                && isValidUri(userInfoUri);
+    }
+
+    public static boolean isValidUri(String url) {
+        try {
+            new URL(url).toURI();
+            return true;
+        } catch (MalformedURLException | URISyntaxException e) {
+            return false;
+        }
+    }
+
 }

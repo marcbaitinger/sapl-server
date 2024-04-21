@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
-import io.sapl.server.ce.model.setup.SupportedDatasourceTypes;
-import io.sapl.server.ce.model.setup.SupportedKeystoreTypes;
+import com.vaadin.flow.theme.lumo.LumoUtility;
+import io.sapl.server.ce.model.setup.Oauth2KeyCloakConfig;
 import io.sapl.server.ce.model.setup.UserManagmentOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -54,9 +54,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @AnonymousAllowed
 @PageTitle("Admin User Setup")
-@Route(value = AdminUserSetupView.ROUTE, layout = SetupLayout.class)
+@Route(value = AdminLoginSetupView.ROUTE, layout = SetupLayout.class)
 @Conditional(SetupNotFinishedCondition.class)
-public class AdminUserSetupView extends VerticalLayout {
+public class AdminLoginSetupView extends VerticalLayout {
 
     private static final long serialVersionUID = -3290402629817559718L;
 
@@ -66,13 +66,15 @@ public class AdminUserSetupView extends VerticalLayout {
     private static final String MODERATE_COLOR = "#e7c200";
     private static final String ERROR_COLOR    = "var(--lumo-error-color)";
 
+    private static final String INVALID_URI_TEXT = "Not a valid URI";
+
     private transient ApplicationConfigService applicationConfigService;
     private transient HttpServletRequest       httpServletRequest;
 
     private final TextField                username             = new TextField("Username");
     private final PasswordField            password             = new PasswordField("Password");
     private final PasswordField            passwordRepeat       = new PasswordField("Repeat Password");
-    private final Button                   pwdSaveConfig        = new Button("Save Admin-User Settings");
+    private final Button                   pwdSaveConfig        = new Button("Save Admin-Login Settings");
     private final RadioButtonGroup<String> userMgm              = new RadioButtonGroup<>("User Management");
     private final TextField                clientId             = new TextField("Client ID");
     private final TextField                clientSecret         = new TextField("Client Secret");
@@ -85,7 +87,15 @@ public class AdminUserSetupView extends VerticalLayout {
     private final Span                     passwordStrengthText = new Span();
     private final Span                     passwordEqualText    = new Span();
 
-    public AdminUserSetupView(@Autowired ApplicationConfigService applicationConfigService,
+    private Span issuerUriInputValidText;
+    private Span jwkSetUriValidText;
+    private Span authorizationUriValidText;
+    private Span tokenUriValidText;
+    private Span userInfoUriValidText;
+
+
+
+    public AdminLoginSetupView(@Autowired ApplicationConfigService applicationConfigService,
             @Autowired HttpServletRequest httpServletRequest) {
         this.applicationConfigService = applicationConfigService;
         this.httpServletRequest       = httpServletRequest;
@@ -103,17 +113,26 @@ public class AdminUserSetupView extends VerticalLayout {
     private Component getLayout() {
         userMgm.setItems(Stream.of(UserManagmentOptions.values()).map(UserManagmentOptions::getDisplayName)
                 .toArray(String[]::new));
-        userMgm.setValue(UserManagmentOptions.LOCAL.getDisplayName());
+        if (applicationConfigService.getOauth2KeyCloakConfig().isOauthLoginAllowed()) {
+            userMgm.setValue(UserManagmentOptions.KEYCLOAK.getDisplayName());
+        } else {
+            userMgm.setValue(UserManagmentOptions.LOCAL.getDisplayName());
+        }
+        userManagementSelection(UserManagmentOptions.getByDisplayName(userMgm.getValue()));
         userMgm.addValueChangeListener(
                 e -> userManagementSelection(UserManagmentOptions.getByDisplayName(e.getValue())));
-        userManagementSelection(UserManagmentOptions.LOCAL); // <- value needs to be read from
-                                                             // applicationConfigService.getAdminUserConfig().xx
 
         pwdSaveConfig.setEnabled(applicationConfigService.getAdminUserConfig().isValidConfig());
         pwdSaveConfig.addClickListener(e -> {
             try {
-                applicationConfigService.persistAdminUserConfig();
-                ConfirmUtils.inform("saved", "Username and password successfully saved");
+                if (UserManagmentOptions.getByDisplayName(userMgm.getValue()) == UserManagmentOptions.KEYCLOAK) {
+                    applicationConfigService.persistOauth2KeyCloakConfig();
+                    ConfirmUtils.inform("saved", "Keycloak settings successfully saved");
+                } else {
+                    applicationConfigService.persistAdminUserConfig();
+                    ConfirmUtils.inform("saved", "Username and password successfully saved");
+                }
+
             } catch (IOException ioe) {
                 ConfirmUtils.inform("IO-Error",
                         "Error while writing application.yml-File. Please make sure that the file is not in use and can be written. Otherwise configure the application.yml-file manually. Error: "
@@ -124,10 +143,72 @@ public class AdminUserSetupView extends VerticalLayout {
         password.setValue(applicationConfigService.getAdminUserConfig().getPassword());
         passwordRepeat.setValue(applicationConfigService.getAdminUserConfig().getPasswordRepeat());
         username.setValue(applicationConfigService.getAdminUserConfig().getUsername());
-        username.addValueChangeListener(e -> updateAdminUserConfig());
+        username.addValueChangeListener(e -> updateAdminLoginConfig());
         username.setValueChangeMode(ValueChangeMode.EAGER);
         username.setRequiredIndicatorVisible(true);
         username.setRequired(true);
+
+        issuerUriInputValidText = new Span(INVALID_URI_TEXT);
+        issuerUriInputValidText.addClassNames(LumoUtility.TextColor.ERROR);
+        issuerUriInputValidText.setVisible(
+                Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getIssuerUri()));
+        jwkSetUriValidText = new Span(INVALID_URI_TEXT);
+        jwkSetUriValidText.addClassNames(LumoUtility.TextColor.ERROR);
+        jwkSetUriValidText.setVisible(
+                Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getJwkSetUri()));
+        authorizationUriValidText = new Span(INVALID_URI_TEXT);
+        authorizationUriValidText.addClassNames(LumoUtility.TextColor.ERROR);
+        authorizationUriValidText.setVisible(Oauth2KeyCloakConfig
+                .isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getAuthorizationUri()));
+        tokenUriValidText = new Span(INVALID_URI_TEXT);
+        tokenUriValidText.addClassNames(LumoUtility.TextColor.ERROR);
+        tokenUriValidText.setVisible(
+                Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getTokenUri()));
+        userInfoUriValidText = new Span(INVALID_URI_TEXT);
+        userInfoUriValidText.addClassNames(LumoUtility.TextColor.ERROR);
+        userInfoUriValidText.setVisible(
+                Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getUserInfoUri()));
+
+        clientId.setValue(applicationConfigService.getOauth2KeyCloakConfig().getClientId());
+        clientId.addValueChangeListener(e -> updateAdminLoginConfig());
+        clientId.setValueChangeMode(ValueChangeMode.EAGER);
+        clientId.setRequiredIndicatorVisible(true);
+        clientId.setRequired(true);
+        clientSecret.setValue(applicationConfigService.getOauth2KeyCloakConfig().getClientSecret());
+        clientSecret.addValueChangeListener(e -> updateAdminLoginConfig());
+        clientSecret.setValueChangeMode(ValueChangeMode.EAGER);
+        clientSecret.setRequiredIndicatorVisible(true);
+        clientSecret.setRequired(true);
+        issuerUri.setValue(applicationConfigService.getOauth2KeyCloakConfig().getIssuerUri());
+        issuerUri.addValueChangeListener(e -> updateAdminLoginConfig());
+        issuerUri.setValueChangeMode(ValueChangeMode.EAGER);
+        issuerUri.setRequiredIndicatorVisible(true);
+        issuerUri.setRequired(true);
+        issuerUri.setHelperComponent(issuerUriInputValidText);
+        jwkSetUri.setValue(applicationConfigService.getOauth2KeyCloakConfig().getJwkSetUri());
+        jwkSetUri.addValueChangeListener(e -> updateAdminLoginConfig());
+        jwkSetUri.setValueChangeMode(ValueChangeMode.EAGER);
+        jwkSetUri.setRequiredIndicatorVisible(true);
+        jwkSetUri.setRequired(true);
+        jwkSetUri.setHelperComponent(jwkSetUriValidText);
+        authorizationUri.setValue(applicationConfigService.getOauth2KeyCloakConfig().getAuthorizationUri());
+        authorizationUri.addValueChangeListener(e -> updateAdminLoginConfig());
+        authorizationUri.setValueChangeMode(ValueChangeMode.EAGER);
+        authorizationUri.setRequiredIndicatorVisible(true);
+        authorizationUri.setRequired(true);
+        authorizationUri.setHelperComponent(authorizationUriValidText);
+        tokenUri.setValue(applicationConfigService.getOauth2KeyCloakConfig().getTokenUri());
+        tokenUri.addValueChangeListener(e -> updateAdminLoginConfig());
+        tokenUri.setValueChangeMode(ValueChangeMode.EAGER);
+        tokenUri.setRequiredIndicatorVisible(true);
+        tokenUri.setRequired(true);
+        tokenUri.setHelperComponent(tokenUriValidText);
+        userInfoUri.setValue(applicationConfigService.getOauth2KeyCloakConfig().getUserInfoUri());
+        userInfoUri.addValueChangeListener(e -> updateAdminLoginConfig());
+        userInfoUri.setValueChangeMode(ValueChangeMode.EAGER);
+        userInfoUri.setRequiredIndicatorVisible(true);
+        userInfoUri.setRequired(true);
+        userInfoUri.setHelperComponent(userInfoUriValidText);
 
         FormLayout adminUserLayout = new FormLayout(userMgm, clientId, clientSecret, issuerUri, jwkSetUri,
                 authorizationUri, tokenUri, userInfoUri, username, pwdLayout(), pwdRepeatLayout(), pwdSaveConfig);
@@ -147,6 +228,7 @@ public class AdminUserSetupView extends VerticalLayout {
 
         switch (option) {
         case KEYCLOAK:
+            applicationConfigService.getOauth2KeyCloakConfig().setOauthLoginAllowed(true);
             username.setVisible(false);
             password.setVisible(false);
             passwordRepeat.setVisible(false);
@@ -161,6 +243,7 @@ public class AdminUserSetupView extends VerticalLayout {
             break;
         case LOCAL:
         default:
+            applicationConfigService.getOauth2KeyCloakConfig().setOauthLoginAllowed(false);
             username.setVisible(true);
             password.setVisible(true);
             passwordRepeat.setVisible(true);
@@ -182,7 +265,7 @@ public class AdminUserSetupView extends VerticalLayout {
 
         add(password);
         password.setValueChangeMode(ValueChangeMode.EAGER);
-        password.addValueChangeListener(e -> updateAdminUserConfig());
+        password.addValueChangeListener(e -> updateAdminLoginConfig());
         return password;
     }
 
@@ -191,7 +274,7 @@ public class AdminUserSetupView extends VerticalLayout {
         pwdEqualCheckIcon.getStyle().setColor(SUCCESS_COLOR);
         passwordRepeat.setSuffixComponent(pwdEqualCheckIcon);
         passwordRepeat.setValueChangeMode(ValueChangeMode.EAGER);
-        passwordRepeat.addValueChangeListener(e -> updateAdminUserConfig());
+        passwordRepeat.addValueChangeListener(e -> updateAdminLoginConfig());
 
         Div passwordEqual = new Div();
         passwordEqual.add(new Text("Passwords are "), passwordEqualText);
@@ -231,15 +314,36 @@ public class AdminUserSetupView extends VerticalLayout {
         }
     }
 
-    private void updateAdminUserConfig() {
+    private void updateAdminLoginConfig() {
         applicationConfigService.getAdminUserConfig().setUsername(username.getValue());
         applicationConfigService.getAdminUserConfig().setPassword(password.getValue());
         applicationConfigService.getAdminUserConfig().setPasswordRepeat(passwordRepeat.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setClientId(clientId.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setClientSecret(clientSecret.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setIssuerUri(issuerUri.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setJwkSetUri(jwkSetUri.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setAuthorizationUri(authorizationUri.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setTokenUri(tokenUri.getValue());
+        applicationConfigService.getOauth2KeyCloakConfig().setUserInfoUri(userInfoUri.getValue());
+
+        issuerUriInputValidText.setVisible(
+                !Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getIssuerUri()));
+        jwkSetUriValidText.setVisible(
+                !Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getJwkSetUri()));
+        authorizationUriValidText.setVisible(!Oauth2KeyCloakConfig
+                .isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getAuthorizationUri()));
+        tokenUriValidText.setVisible(
+                !Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getTokenUri()));
+        userInfoUriValidText.setVisible(
+                !Oauth2KeyCloakConfig.isValidUri(applicationConfigService.getOauth2KeyCloakConfig().getUserInfoUri()));
 
         updatePwdEqualText();
         updatePwdStrengthText();
         pwdEqualCheckIcon.setVisible(password.getValue().equals(passwordRepeat.getValue()));
-        pwdSaveConfig.setEnabled(applicationConfigService.getAdminUserConfig().isValidConfig());
+        pwdSaveConfig.setEnabled((applicationConfigService.getAdminUserConfig().isValidConfig()
+                && UserManagmentOptions.getByDisplayName(userMgm.getValue()) == UserManagmentOptions.LOCAL)
+                || (applicationConfigService.getOauth2KeyCloakConfig().isValidConfig()
+                        && UserManagmentOptions.getByDisplayName(userMgm.getValue()) == UserManagmentOptions.KEYCLOAK));
 
     }
 

@@ -40,7 +40,7 @@ import com.vaadin.flow.server.auth.AccessAnnotationChecker;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import io.sapl.server.ce.model.setup.condition.SetupNotFinishedCondition;
-import io.sapl.server.ce.ui.views.setup.AdminUserSetupView;
+import io.sapl.server.ce.ui.views.setup.AdminLoginSetupView;
 import io.sapl.server.ce.ui.views.setup.ApiAuthenticationSetupView;
 import io.sapl.server.ce.ui.views.setup.DbmsSetupView;
 import io.sapl.server.ce.ui.views.setup.FinishSetupView;
@@ -107,7 +107,7 @@ public class SetupLayout extends AppLayout {
         var nav = new SideNav();
         addItem(nav, "Welcome", SetupView.class, LineAwesomeIcon.FILE_SOLID);
         addItem(nav, "DBMS Setup", DbmsSetupView.class, LineAwesomeIcon.DATABASE_SOLID);
-        addItem(nav, "Admin User Setup", AdminUserSetupView.class, LineAwesomeIcon.USER_SOLID);
+        addItem(nav, "Admin Login Setup", AdminLoginSetupView.class, LineAwesomeIcon.USER_SOLID);
         addItem(nav, "HTTP Endpoint Setup", HttpEndpointSetupView.class, LineAwesomeIcon.SERVER_SOLID);
         addItem(nav, "RSocket Endpoint Setup", RSocketEndpointSetupView.class, LineAwesomeIcon.SERVER_SOLID);
         addItem(nav, "API Authentication Setup", ApiAuthenticationSetupView.class, LineAwesomeIcon.NETWORK_WIRED_SOLID);

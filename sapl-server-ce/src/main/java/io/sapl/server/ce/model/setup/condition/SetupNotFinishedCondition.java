@@ -25,6 +25,8 @@ public class SetupNotFinishedCondition implements Condition {
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return context.getEnvironment().getProperty("spring.datasource.url", "").isEmpty()
-                || context.getEnvironment().getProperty("io.sapl.server.accesscontrol.admin-username", "").isEmpty();
+                || (context.getEnvironment().getProperty("io.sapl.server.accesscontrol.admin-username", "").isEmpty()
+                        && context.getEnvironment()
+                                .getProperty("io.sapl.server.accesscontrol.allowOAuth2Login", "false").equals("false"));
     }
 }

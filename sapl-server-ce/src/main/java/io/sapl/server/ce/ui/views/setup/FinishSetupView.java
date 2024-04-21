@@ -78,8 +78,7 @@ public class FinishSetupView extends VerticalLayout {
 
         restart.addClickListener(
                 e -> SaplServerCeApplication.restart(applicationConfigService.getHttpEndpoint().getUri()));
-        restart.setEnabled(applicationConfigService.getDbmsConfig().isSaved()
-                && applicationConfigService.getAdminUserConfig().isSaved()
+        restart.setEnabled(applicationConfigService.getDbmsConfig().isSaved() && adminLoginIsSaved()
                 && applicationConfigService.getHttpEndpoint().isSaved()
                 && applicationConfigService.getRsocketEndpoint().isSaved()
                 && applicationConfigService.getApiAuthenticationConfig().isSaved()
@@ -87,7 +86,7 @@ public class FinishSetupView extends VerticalLayout {
 
         var  adminStateView = new Div();
         Icon adminStateIcon;
-        if (applicationConfigService.getAdminUserConfig().isSaved()) {
+        if (adminLoginIsSaved()) {
             adminStateIcon = VaadinIcon.CHECK_CIRCLE.create();
             adminStateIcon.getElement().getThemeList().add(THEME_BADGESUCCESSPILL);
             adminStateIcon.getStyle().setPadding(PADDING_XS);
@@ -96,7 +95,7 @@ public class FinishSetupView extends VerticalLayout {
             adminStateIcon.getElement().getThemeList().add(THEME_BADGEERRORPILL);
             adminStateIcon.getStyle().setPadding(PADDING_XS);
         }
-        adminStateView.add(new Text("Admin user setup finished "), adminStateIcon);
+        adminStateView.add(new Text("Admin login setup finished "), adminStateIcon);
 
         var  dbmsStateView = new Div();
         Icon dbmsStateIcon;
@@ -200,6 +199,11 @@ public class FinishSetupView extends VerticalLayout {
         var div     = ErrorComponentUtils.getErrorDiv(warning);
         div.setVisible(visible);
         return div;
+    }
+
+    private boolean adminLoginIsSaved() {
+        return applicationConfigService.getAdminUserConfig().isSaved()
+                || applicationConfigService.getOauth2KeyCloakConfig().isSaved();
     }
 
 }
