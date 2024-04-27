@@ -69,7 +69,7 @@ public class SetupView extends VerticalLayout {
         pKeyFeatures.setText(pKeyFeatures.getText()
                 + "1. Configure the DBMS connection, either with an existing H2 or MariaDB database or a newly created H2 database.\n");
         pKeyFeatures.setText(pKeyFeatures.getText()
-                + "2. Set up the username and password for the administrator user for the SAPL Server CE.\n");
+                + "2. Set up the username and password for the administrator or the Keycloak config for the SAPL Server CE.\n");
 
         pKeyFeatures.setText(
                 pKeyFeatures.getText() + "3. Configure the HTTP and RSocket endpoints of the SAPL Server CE.\n");
@@ -84,7 +84,7 @@ public class SetupView extends VerticalLayout {
         pUsage.setText(pUsage.getText()
                 + "- Run the SAPL Server CE with the production profile as described in the readme.\n");
         pUsage.setText(pUsage.getText()
-                + "- If the application cannot find a URL for the connection to the database and the name for the admin user in the configuration, the Setup Wizard will be started and shown in the browser. The default ports are 8080 and 8443.\n");
+                + "- If the application cannot find a URL for the connection to the database or the name for the admin user is missing and OAuth 2 login is disabled in the configuration, the Setup Wizard will be started and shown in the browser. The default ports are 8080 and 8443.\n");
         pUsage.setText(pUsage.getText() + "- Now you can set up all the parameters according to your environment.\n");
         pUsage.setText(pUsage.getText()
                 + "- After you have saved all settings, use the \"Restart SAPL Server CE\" button to restart the application.\n");

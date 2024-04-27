@@ -122,7 +122,13 @@ or
 io.sapl.server.accesscontrol.admin-username
 ```
 
-not present here, the application starts with the setup wizard. The wizard is then accessible depending on the settings for `server.port` and `server.address` in the application.yml. If as an example, you delete the `application.yml` file under `sapl-server-ce/config`, the settings of the `application.yml` under `sapl-server-ce/src/main/resources take` effect and the application can be accessed under the url configured in the application.yml, typically
+or
+
+```
+io.sapl.server.accesscontrol.allowOAuth2Login
+```
+
+not present or false, the application starts with the setup wizard. The wizard is then accessible depending on the settings for `server.port` and `server.address` in the application.yml. If as an example, you delete the `application.yml` file under `sapl-server-ce/config`, the settings of the `application.yml` under `sapl-server-ce/src/main/resources take` effect and the application can be accessed under the url configured in the application.yml, typically
 
 ```
 http://localhost:8080/
@@ -519,7 +525,7 @@ To configure the SAPL Server CE correctly, we recommend opening the following ov
 1. Realm settings
 2. Endpoints **OpenID Endpoint Configuration**
 
-You should see an overview page in JSON format with various parameters. The next step is to configure the **application.yml**. The following configuration can be adopted here:
+You should see an overview page in JSON format with various parameters. To create a configuration we recommend using the setup wizard. Alternatively, the **application.yml** can also be edited manually. The following configuration can be adopted here:
 
 ```shell
 spring.security.oauth2.client:
